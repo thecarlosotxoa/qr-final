@@ -1,48 +1,51 @@
 import React, { useState } from "react";
+import LoginPopup from "./components/LoginPopup"; 
+import SignupPopup from "./components/SignupPopup";
 
 function App() {
   const [inputValue, setInputValue] = useState(""); // State to hold user input
   const [imgSrc, setImgSrc] = useState(null); // State to hold the generated QR code image
   const [error, setError] = useState(null); // State to hold any error messages
 
+   // States for controlling popup visibility
+   const [showLoginPopup, setShowLoginPopup] = useState(false);
+   const [showSignupPopup, setShowSignupPopup] = useState(false);
+
   // Handler for form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-  
+
     console.log("Sending request to backend...");
     
-    // config for local testing
-    fetch("http://127.0.0.1:5000/generate-qr", {
-    // config for ec2 deployment
-    // fetch("http://18.222.30.194:5000/generate-qr", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({ data: inputValue }), // Send the input value as JSON data
-    })
-      .then((response) => {
-        console.log("Received response from backend:", response);
-        if (!response.ok) {
-          throw new Error("Failed to generate QR code. Please try again.");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.qr_code) {
-          setImgSrc(`data:image/png;base64,${data.qr_code}`);
-          console.log("QR code generated successfully:", data.qr_code);
-        } else {
-          throw new Error(data.error || "Failed to generate QR code.");
-        }
-      })
-      .catch((err) => {
-        console.error("Error:", err);
-        setError(err.message);
-      });
-  };  
+    try {
+      // config for local testing      
+      const response = await fetch("http://127.0.0.1:5000/generate-qr", {
+      // config for ec2 deployment  
+      // const response = await fetch("http://18.222.30.194:5000/generate-qr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ data: inputValue }), // Send the input value as JSON data
+      });      
+
+      if (!response.ok) {
+        throw new Error("Failed to generate QR code. Please try again.");
+      }
+
+      const data = await response.json();
+      if (data.qr_code) {
+        setImgSrc(`data:image/png;base64,${data.qr_code}`);
+        console.log("QR code generated successfully:", data.qr_code);
+      } else {
+        throw new Error(data.error || "Failed to generate QR code.");
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };     
 
   return (
     <div className="w-full min-h-screen grid place-content-center bg-[#181818]">
@@ -89,7 +92,37 @@ function App() {
             Generate
           </button>
         </form>
+
+        {/* Login link below the Generate button */}
+        <div className="text-center mt-4">
+          <span
+            className="text-neutral-400 hover:text-neutral-300 cursor-pointer"
+            onClick={() => setShowLoginPopup(true)}
+          >
+            Log in
+          </span>
+        </div>     
       </div>
+
+      {/* Show Login or Signup Popup */}
+      {showLoginPopup && (
+        <LoginPopup
+          onClose={() => setShowLoginPopup(false)}
+          onSwitchToSignup={() => {
+            setShowLoginPopup(false);
+            setShowSignupPopup(true);
+          }}
+        />
+      )}
+      {showSignupPopup && (
+        <SignupPopup
+          onClose={() => setShowSignupPopup(false)}
+          onSwitchToLogin={() => {
+            setShowSignupPopup(false);
+            setShowLoginPopup(true);
+          }}
+        />
+      )}
     </div>
   );
 }
