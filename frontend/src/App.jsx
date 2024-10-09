@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import LoginPopup from "./components/LoginPopup"; 
+import LoginPopup from "./components/LoginPopup";
 import SignupPopup from "./components/SignupPopup";
 
 function App() {
@@ -7,9 +7,9 @@ function App() {
   const [imgSrc, setImgSrc] = useState(null); // State to hold the generated QR code image
   const [error, setError] = useState(null); // State to hold any error messages
 
-   // States for controlling popup visibility
-   const [showLoginPopup, setShowLoginPopup] = useState(false);
-   const [showSignupPopup, setShowSignupPopup] = useState(false);
+  // States for controlling popup visibility
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [showSignupPopup, setShowSignupPopup] = useState(false);
 
   // Handler for form submission
   const handleSubmit = async (e) => {
@@ -17,19 +17,19 @@ function App() {
     setError(null);
 
     console.log("Sending request to backend...");
-    
+
     try {
-      // config for local testing      
+      // config for local testing
       const response = await fetch("http://127.0.0.1:5000/generate-qr", {
-      // config for ec2 deployment  
-      // const response = await fetch("http://18.222.30.194:5000/generate-qr", {
+        // config for ec2 deployment
+        // const response = await fetch("http://18.222.30.194:5000/generate-qr", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({ data: inputValue }), // Send the input value as JSON data
-      });      
+      });
 
       if (!response.ok) {
         throw new Error("Failed to generate QR code. Please try again.");
@@ -45,7 +45,7 @@ function App() {
     } catch (err) {
       setError(err.message);
     }
-  };     
+  };
 
   return (
     <div className="w-full min-h-screen grid place-content-center bg-[#181818]">
@@ -101,7 +101,7 @@ function App() {
           >
             Log in
           </span>
-        </div>     
+        </div>
       </div>
 
       {/* Show Login or Signup Popup */}
