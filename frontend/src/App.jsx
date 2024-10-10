@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import LoginPopup from "./components/LoginPopup";
 import SignupPopup from "./components/SignupPopup";
+import LoginPopup from "./components/LoginPopup";
 
 function App() {
   const [inputValue, setInputValue] = useState(""); // State to hold user input

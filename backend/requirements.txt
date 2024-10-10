@@ -9,3 +9,5 @@ qrcode
 # Other dependencies
 pillow  # Uncomment if needed for image processing
 # requests  # Uncomment if needed for HTTP requests
+
+psycopg2-binary
