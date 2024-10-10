@@ -1,8 +1,47 @@
 // src/components/LoginPopup.jsx
-import React from "react";
-import { AiOutlineClose } from "react-icons/ai"; // Import close icon from react-icons
+import React, { useState } from "react";
+import { AiOutlineClose } from "react-icons/ai";
+import { loginUser } from "../services/userService";
 
-const LoginPopup = ({ onClose, onSwitchToSignup }) => {
+const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      await loginUser(email, password);
+      // After successful login, fetch the user profile
+      const profile = await fetchUserProfile();
+      setUser(profile);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Fetch user profile after login
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/user/profile", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch user profile");
+      const userData = await response.json();
+      return userData;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
       <div className="bg-[#252525] rounded-lg p-6 w-[20rem] text-slate-300 relative">
@@ -12,13 +51,22 @@ const LoginPopup = ({ onClose, onSwitchToSignup }) => {
         </button>
 
         <h2 className="text-center text-2xl font-semibold text-slate-100">Log In</h2>
-        
-        <form className="space-y-4 mt-4">
+
+        {error && (
+          <div className="w-full p-2 text-center text-red-500 border border-red-500 rounded mt-2">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-4 mt-4" onSubmit={handleLogin}>
           <div>
             <input
               type="email"
               className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
               placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
           <div>
@@ -26,6 +74,9 @@ const LoginPopup = ({ onClose, onSwitchToSignup }) => {
               type="password"
               className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
           <button

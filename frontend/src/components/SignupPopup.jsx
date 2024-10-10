@@ -1,8 +1,48 @@
 // src/components/SignupPopup.jsx
-import React from "react";
-import { AiOutlineClose } from "react-icons/ai"; // Import close icon from react-icons
+import React, { useState } from "react";
+import { AiOutlineClose } from "react-icons/ai";
+import { signupUser } from "../services/userService";
 
-const SignupPopup = ({ onClose, onSwitchToLogin }) => {
+const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      await signupUser(name, email, password);
+      // After successful signup, fetch the user profile
+      const profile = await fetchUserProfile();
+      setUser(profile);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Fetch user profile after signup
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/user/profile", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch user profile");
+      const userData = await response.json();
+      return userData;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
       <div className="bg-[#252525] rounded-lg p-6 w-[20rem] text-slate-300 relative">
@@ -12,13 +52,32 @@ const SignupPopup = ({ onClose, onSwitchToLogin }) => {
         </button>
 
         <h2 className="text-center text-2xl font-semibold text-slate-100">Create Account</h2>
-        
-        <form className="space-y-4 mt-4">
+
+        {error && (
+          <div className="w-full p-2 text-center text-red-500 border border-red-500 rounded mt-2">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-4 mt-4" onSubmit={handleSignup}>
+          <div>
+            <input
+              type="text"
+              className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
           <div>
             <input
               type="email"
               className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
               placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
           <div>
@@ -26,6 +85,9 @@ const SignupPopup = ({ onClose, onSwitchToLogin }) => {
               type="password"
               className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
           <button
