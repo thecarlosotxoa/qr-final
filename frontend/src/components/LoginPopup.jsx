@@ -12,11 +12,14 @@ const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
     e.preventDefault();
     setError(null);
     try {
+      // Attempt to login the user
       await loginUser(email, password);
-      // After successful login, fetch the user profile
+      // Fetch the user's profile after successful login
       const profile = await fetchUserProfile();
       setUser(profile);
-      onClose();
+      onClose(); // Close the login popup after successful login
+      // Redirect to the user's profile
+      window.location.href = "/profile";
     } catch (err) {
       setError(err.message);
     }
@@ -50,7 +53,7 @@ const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
           <AiOutlineClose className="text-white hover:text-red-400" />
         </button>
 
-        <h2 className="text-center text-2xl font-semibold text-slate-100">Log In</h2>
+        <h2 className="text-center text-2xl font-semibold text-slate-100">Login</h2>
 
         {error && (
           <div className="w-full p-2 text-center text-red-500 border border-red-500 rounded mt-2">
@@ -83,7 +86,7 @@ const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
             type="submit"
             className="w-full py-3 bg-neutral-600 hover:bg-neutral-500 duration-200 rounded text-white"
           >
-            Log In
+            Login
           </button>
         </form>
 
@@ -93,7 +96,7 @@ const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
             className="text-neutral-400 hover:text-neutral-300 cursor-pointer"
             onClick={onSwitchToSignup}
           >
-            New User? Create an account
+            Don't have an account? Sign Up
           </span>
         </div>
       </div>

@@ -1,6 +1,7 @@
 // src/components/SignupPopup.jsx
 import React, { useState } from "react";
 import { AiOutlineClose } from "react-icons/ai";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import { signupUser } from "../services/userService";
 
 const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
@@ -8,6 +9,8 @@ const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+
+  const navigate = useNavigate(); // Initialize navigate for programmatic routing
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -17,7 +20,8 @@ const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
       // After successful signup, fetch the user profile
       const profile = await fetchUserProfile();
       setUser(profile);
-      onClose();
+      onClose(); // Close the popup
+      navigate("/profile"); // Redirect to profile page after signup
     } catch (err) {
       setError(err.message);
     }

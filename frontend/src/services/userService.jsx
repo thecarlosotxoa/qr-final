@@ -100,7 +100,7 @@ export async function loginUser(email, password) {
     }
 
     const data = await response.json();
-    return data.message;
+    return data; // This will return the whole response, including user info if needed
   } catch (error) {
     console.error(error);
     throw error;
