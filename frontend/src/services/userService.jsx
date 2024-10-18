@@ -1,6 +1,7 @@
 // src/services/userService.js
 
-const API_BASE_URL = "http://127.0.0.1:5000"; // Update this if your backend is hosted elsewhere
+// const API_BASE_URL = "http://127.0.0.1:5000"; // Update this if your backend is hosted elsewhere
+const API_BASE_URL = "http://localhost:5000"; // Update this if your backend is hosted elsewhere
 
 // Function to fetch user profile
 export async function getUserProfile() {

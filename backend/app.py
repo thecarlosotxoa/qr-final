@@ -1,5 +1,6 @@
 # app.py
 from flask import Flask, request, jsonify, session
+from flask_session import Session  # Import Flask-Session
 from flask_cors import CORS
 import qrcode
 import io
@@ -17,12 +18,37 @@ app = Flask(__name__)
 # Secret key for sessions, should be set to something more secure in production
 app.secret_key = "your_secret_key"  # Replace with a secure secret key
 
+'''
+flask-session alternative config
+'''
+# Configure session to use filesystem (server-side session)
+app.config['SESSION_TYPE'] = 'filesystem'
+
+# Initialize the extension
+Session(app)
+
+# Update CORS configuration to allow credentials
+CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/*": {"origins": "http://localhost:5173"}},
+)
+
+app.config.update(
+    # SESSION_COOKIE_DOMAIN=None,  # No longer needed
+    SESSION_COOKIE_SECURE=False,    # Keep False for HTTP
+    SESSION_COOKIE_HTTPONLY=True,   # This is fine
+    SESSION_COOKIE_SAMESITE="Lax",  # Lax is acceptable
+    PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
+)
+
+'''
 # CORS configuration
 CORS(
     app,
     supports_credentials=True,
     resources={     
-        r"/*": {"origins": "http://localhost:5173"},   
+        r"/*": {"origins": "http://localhost:5173"},  
         r"/generate-qr": {"origins": "http://localhost:5173"},
         r"/register": {"origins": "http://localhost:5173"},
         r"/login": {"origins": "http://localhost:5173"},
@@ -32,13 +58,16 @@ CORS(
 
 # Session configuration for local development
 app.config.update(
+    # SESSION_COOKIE_DOMAIN='localhost',
     SESSION_COOKIE_DOMAIN=None,      # Let Flask set the cookie for the correct domain
     SESSION_COOKIE_SECURE=False,  # False for development, True for production (HTTPS)
-    SESSION_COOKIE_HTTPONLY=True,  # Protect against cross-site scripting (XSS)
-    # SESSION_COOKIE_SAMESITE="Lax"  # Allow sending cookies with cross-origin requests from the same site
-    SESSION_COOKIE_SAMESITE="None"  # Allows cross-site cookies
+    # SESSION_COOKIE_HTTPONLY=True,  # Protect against cross-site scripting (XSS)
+    SESSION_COOKIE_SAMESITE="Lax",  # Allow sending cookies with cross-origin requests from the same site
+    # SESSION_COOKIE_SAMESITE="None",  # Allows cross-site cookies
+    # SESSION_COOKIE_SAMESITE="Strict",
 )
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Extend session life to 30 minutes
+'''
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -155,6 +184,8 @@ def login_user():
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             print(f"Session after login: {session}")  # Debug print to check session
+            session.permanent = True  # Ensure the session persists
+            session.modified = True   # Mark the session as modified
             return jsonify({'message': 'Login successful!', 'user': {'id': user['id'], 'name': user['name'], 'email': user['email']}}), 200
         else:
             return jsonify({'error': 'Invalid credentials'}), 401
@@ -176,6 +207,7 @@ def get_user_profile():
     """Endpoint to get the logged-in user's profile."""
     user_id = session.get("user_id")
     if not user_id:
+        print(f"failed to get user_id")
         return jsonify({"error": "User not logged in"}), 403
 
     try:
@@ -217,7 +249,17 @@ def get_user_qr_codes():
     except Exception as e:
         logging.error(f"Fetching QR codes error: {str(e)}")
         return jsonify({"error": "An error occurred while fetching QR codes."}), 500
+    
+@app.after_request
+def after_request(response):
+    print(response.headers)  # This will print headers, including 'Set-Cookie'
+    return response
+
+# if __name__ == "__main__":
+    # logging.basicConfig(level=logging.ERROR)
+    # app.run(debug=True)
+    # app.run(host="127.0.0.1", port=5000)  # Ensure the correct host and port
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
-    app.run(debug=True)
+    app.run(debug=True, host='localhost', port=5000)

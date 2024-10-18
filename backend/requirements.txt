@@ -2,6 +2,7 @@
 Flask
 Flask-CORS
 Werkzeug
+flask-session
 
 # QR code generation
 qrcode
