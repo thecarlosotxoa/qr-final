@@ -250,10 +250,12 @@ def get_user_qr_codes():
         logging.error(f"Fetching QR codes error: {str(e)}")
         return jsonify({"error": "An error occurred while fetching QR codes."}), 500
     
+'''
 @app.after_request
 def after_request(response):
     print(response.headers)  # This will print headers, including 'Set-Cookie'
     return response
+'''
 
 # if __name__ == "__main__":
     # logging.basicConfig(level=logging.ERROR)
