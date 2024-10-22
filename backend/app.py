@@ -323,18 +323,85 @@ def delete_qr_code(id):
     except Exception as e:
         logging.error(f"Deletion error: {str(e)}")
         return jsonify({"error": "An error occurred while deleting the QR code"}), 500
+    
+# Update user profile
+@app.route('/user/update-profile', methods=['POST'])
+def update_profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 403
 
-'''
-@app.after_request
-def after_request(response):
-    print(response.headers)  # This will print headers, including 'Set-Cookie'
-    return response
-'''
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
 
-# if __name__ == "__main__":
-    # logging.basicConfig(level=logging.ERROR)
-    # app.run(debug=True)
-    # app.run(host="127.0.0.1", port=5000)  # Ensure the correct host and port
+    if not name or not email or not current_password:
+        return jsonify({"error": "Name, email, and current password are required."}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Verify the current password
+        cur.execute('SELECT password FROM users WHERE id = %s', (user_id,))
+        user = cur.fetchone()
+        if not check_password_hash(user['password'], current_password):
+            return jsonify({"error": "Incorrect current password"}), 403
+
+        # Update user info
+        cur.execute('UPDATE users SET name = %s, email = %s WHERE id = %s', (name, email, user_id))
+        
+        if new_password:
+            hashed_password = generate_password_hash(new_password)
+            cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "Profile updated successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Delete user account
+@app.route('/user/delete-account', methods=['DELETE'])
+def delete_account():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 403
+
+    data = request.get_json()
+    password = data.get("password")
+
+    if not password:
+        return jsonify({"error": "Password is required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Verify the user's password
+        cur.execute('SELECT password FROM users WHERE id = %s', (user_id,))
+        user = cur.fetchone()
+
+        if not check_password_hash(user['password'], password):
+            return jsonify({"error": "Incorrect password"}), 403
+
+        # Delete the user and all associated QR codes
+        cur.execute('DELETE FROM qr_codes WHERE user_id = %s', (user_id,))
+        cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        session.pop('user_id', None)  # Remove session
+        return jsonify({"message": "Account deleted successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)

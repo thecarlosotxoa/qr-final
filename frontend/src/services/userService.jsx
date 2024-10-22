@@ -153,3 +153,43 @@ export async function signupUser(name, email, password) {
     throw error;
   }
 }
+
+// Update user profile
+export async function updateProfile(name, email, currentPassword, newPassword) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/user/update-profile`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, current_password: currentPassword, new_password: newPassword }),
+    });
+
+    if (!response.ok) throw new Error("Failed to update profile");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+// Delete user account with password confirmation
+export async function deleteAccount(password) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/user/delete-account`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password }), // Send the password
+    });
+
+    if (!response.ok) throw new Error("Failed to delete account");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
