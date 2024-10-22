@@ -42,6 +42,25 @@ export async function saveQRCode(inputText, qrImage) {
   }
 }
 
+// Function to delete a QR code by its ID
+export async function deleteQRCode(id) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/user/delete-qr/${id}`, {
+      method: "DELETE",
+      credentials: "include", // Important for session-based auth
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to delete QR code");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
 // Function to log out a user
 export async function logoutUser(setUser) {
   try {
@@ -84,6 +103,7 @@ export async function getGeneratedQRCodes() {
 }
 
 // Function to handle user login
+// src/services/userService.js
 export async function loginUser(email, password) {
   try {
     const response = await fetch(`${API_BASE_URL}/login`, {
@@ -95,18 +115,19 @@ export async function loginUser(email, password) {
       body: JSON.stringify({ email, password }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to log in");
+      throw new Error(data.error || "Failed to log in");
     }
 
-    const data = await response.json();
-    return data; // This will return the whole response, including user info if needed
+    return data; // This should contain { message, user }
   } catch (error) {
     console.error(error);
     throw error;
   }
 }
+
 
 // Function to handle user signup
 export async function signupUser(name, email, password) {
@@ -120,13 +141,13 @@ export async function signupUser(name, email, password) {
       body: JSON.stringify({ name, email, password }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to sign up");
+      throw new Error(data.error || "Failed to sign up");
     }
 
-    const data = await response.json();
-    return data.message;
+    return data; // This should contain { message, user }
   } catch (error) {
     console.error(error);
     throw error;

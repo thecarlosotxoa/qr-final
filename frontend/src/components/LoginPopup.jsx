@@ -2,46 +2,28 @@
 import React, { useState } from "react";
 import { AiOutlineClose } from "react-icons/ai";
 import { loginUser } from "../services/userService";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const LoginPopup = ({ onClose, onSwitchToSignup, setUser }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
 
+  const navigate = useNavigate(); // Initialize navigate
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
     try {
       // Attempt to login the user
-      await loginUser(email, password);
-      // Fetch the user's profile after successful login
-      const profile = await fetchUserProfile();
-      setUser(profile);
+      const data = await loginUser(email, password);
+      // Use the user data returned from the login response
+      setUser(data.user);
       onClose(); // Close the login popup after successful login
-      // Redirect to the user's profile
-      window.location.href = "/profile";
+      // Redirect to the user's profile using navigate
+      navigate('/profile');
     } catch (err) {
       setError(err.message);
-    }
-  };
-
-  // Fetch user profile after login
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/user/profile", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch user profile");
-      const userData = await response.json();
-      return userData;
-    } catch (error) {
-      console.error(error);
-      return null;
     }
   };
 

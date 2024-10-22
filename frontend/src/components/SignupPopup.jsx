@@ -16,34 +16,15 @@ const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
     e.preventDefault();
     setError(null);
     try {
-      await signupUser(name, email, password);
-      // After successful signup, fetch the user profile
-      const profile = await fetchUserProfile();
-      setUser(profile);
+      // Attempt to sign up the user
+      const data = await signupUser(name, email, password);
+      // Use the user data returned from the signup response
+      setUser(data.user);
       onClose(); // Close the popup
-      navigate("/profile"); // Redirect to profile page after signup
+      // Redirect to profile page after signup
+      navigate("/profile");
     } catch (err) {
       setError(err.message);
-    }
-  };
-
-  // Fetch user profile after signup
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/user/profile", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch user profile");
-      const userData = await response.json();
-      return userData;
-    } catch (error) {
-      console.error(error);
-      return null;
     }
   };
 

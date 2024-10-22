@@ -10,7 +10,8 @@ import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
 
 # Create Flask app
 app = Flask(__name__)
@@ -35,6 +36,15 @@ CORS(
 )
 
 app.config.update(
+    SESSION_COOKIE_SECURE=False,    # False for HTTP, True for HTTPS
+    SESSION_COOKIE_HTTPONLY=False,  # Set to False to allow JavaScript access (if needed)
+    SESSION_COOKIE_SAMESITE=None,   # Allow cross-origin requests
+    SESSION_COOKIE_DOMAIN='localhost',  # Set domain to 'localhost'
+    PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
+)
+
+'''
+app.config.update(
     # SESSION_COOKIE_DOMAIN=None,  # No longer needed
     SESSION_COOKIE_SECURE=False,    # Keep False for HTTP
     SESSION_COOKIE_HTTPONLY=True,   # This is fine
@@ -42,7 +52,7 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
 )
 
-'''
+
 # CORS configuration
 CORS(
     app,
@@ -98,22 +108,6 @@ def generate_qr():
         img.save(img_buffer, format="PNG")
         img_str = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
 
-        # Save QR code if user is logged in
-        user_id = session.get("user_id")
-        if user_id:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute(
-                """
-                INSERT INTO qr_codes (user_id, qr_text, qr_image, timestamp)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (user_id, data, img_str, datetime.utcnow()),
-            )
-            conn.commit()
-            cur.close()
-            conn.close()
-
         return jsonify({"qr_code": img_str}), 200
     except Exception as e:
         error_message = f"An error occurred: {str(e)}\n{traceback.format_exc()}"
@@ -157,7 +151,11 @@ def register_user():
         session['user_id'] = user_id
         print(f"Session set: {session}")  # Debug print to ensure session is set
 
-        return jsonify({'message': 'User registered successfully!', 'user': {'id': user_id, 'name': name, 'email': email}}), 201
+        # Return user data
+        return jsonify({
+            'message': 'User registered successfully!',
+            'user': {'id': user_id, 'name': name, 'email': email}
+        }), 201
     except Exception as e:
         logging.error(f"Registration error: {str(e)}")
         return jsonify({'error': 'An error occurred during registration.'}), 500
@@ -236,7 +234,7 @@ def get_user_qr_codes():
 
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
             "SELECT id, qr_text, qr_image, timestamp FROM qr_codes WHERE user_id = %s ORDER BY timestamp DESC",
             (user_id,)
@@ -245,11 +243,87 @@ def get_user_qr_codes():
         cur.close()
         conn.close()
 
+        # Process qr_codes to convert 'qr_image' from memoryview to string
+        for qr_code in qr_codes:
+            # Convert 'qr_image' from memoryview to string
+            qr_image_memoryview = qr_code['qr_image']
+            if isinstance(qr_image_memoryview, memoryview):
+                qr_image_bytes = qr_image_memoryview.tobytes()
+                qr_image_str = qr_image_bytes.decode('utf-8')
+                qr_code['qr_image'] = qr_image_str
+
+            # Convert 'timestamp' to ISO format string with timezone info
+            timestamp = qr_code['timestamp']
+            if isinstance(timestamp, datetime):
+                # Ensure the timestamp is timezone-aware
+                if timestamp.tzinfo is None:
+                    timestamp = timestamp.replace(tzinfo=timezone.utc)
+                qr_code['timestamp'] = timestamp.isoformat()
+
         return jsonify(qr_codes), 200
     except Exception as e:
         logging.error(f"Fetching QR codes error: {str(e)}")
         return jsonify({"error": "An error occurred while fetching QR codes."}), 500
     
+# Save QR code
+@app.route('/user/save-qr', methods=['POST'])
+def save_qr_code():
+    """Endpoint to save a QR code for a logged-in user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 403
+
+    data = request.get_json()
+    inputText = data.get('inputText')
+    qrImage = data.get('qrImage')
+    if not inputText or not qrImage:
+        return jsonify({"error": "Missing inputText or qrImage"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO qr_codes (user_id, qr_text, qr_image, timestamp)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (user_id, inputText, qrImage, datetime.now(timezone.utc).replace(tzinfo=None)),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "QR code saved successfully."}), 201
+    except Exception as e:
+        logging.error(f"Error saving QR code: {str(e)}")
+        return jsonify({"error": "An error occurred while saving the QR code."}), 500
+
+# Delete a QR code
+@app.route('/user/delete-qr/<int:id>', methods=['DELETE'])
+def delete_qr_code(id):
+    """Endpoint to delete a QR code by its ID."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 403
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Ensure the QR code belongs to the logged-in user before deleting
+        cur.execute('DELETE FROM qr_codes WHERE id = %s AND user_id = %s RETURNING id', (id, user_id))
+        deleted_id = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if deleted_id:
+            return jsonify({"message": "QR code deleted successfully"}), 200
+        else:
+            return jsonify({"error": "QR code not found or does not belong to the user"}), 404
+    except Exception as e:
+        logging.error(f"Deletion error: {str(e)}")
+        return jsonify({"error": "An error occurred while deleting the QR code"}), 500
+
 '''
 @app.after_request
 def after_request(response):

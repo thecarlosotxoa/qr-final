@@ -14,13 +14,15 @@ function App() {
   // States for controlling popup visibility
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [showSignupPopup, setShowSignupPopup] = useState(false);
-  const [user, setUser] = useState(null); // To track logged-in user
+  const [user, setUser] = useState(null); // To track logged-in user  
+  const [userLoading, setUserLoading] = useState(true); // New state for user loading to avoid race conditions
 
   // Fetch profile if logged in
   useEffect(() => {
     async function fetchProfile() {
       const profile = await getUserProfile();
       if (profile) setUser(profile);
+      setUserLoading(false); // Set loading to false after fetching
     }
     fetchProfile();
   }, []);
@@ -158,7 +160,10 @@ function App() {
               </div>
             }
           />
-          <Route path="/profile" element={<ProfilePage user={user} />} />
+          <Route
+            path="/profile"
+            element={<ProfilePage user={user} userLoading={userLoading} setUser={setUser} />}
+          />
         </Routes>
       </div>
     </Router>
