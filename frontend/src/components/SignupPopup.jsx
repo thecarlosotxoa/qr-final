@@ -12,9 +12,30 @@ const SignupPopup = ({ onClose, onSwitchToLogin, setUser }) => {
 
   const navigate = useNavigate(); // Initialize navigate for programmatic routing
 
+  // Function to validate form inputs
+  const validateForm = () => {
+    if (!name || !email || !password) {
+      setError("All fields are required.");
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) { // Check for valid email format
+      setError("Please enter a valid email address.");
+      return false;
+    }
+    if (password.length < 6) { // Ensure password is at least 6 characters
+      setError("Password must be at least 6 characters long.");
+      return false;
+    }
+    return true;
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Run client-side validation before submitting
+    if (!validateForm()) return;
+
     try {
       // Attempt to sign up the user
       const data = await signupUser(name, email, password);

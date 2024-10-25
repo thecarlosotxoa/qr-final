@@ -11,7 +11,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone
-
+import re
 
 # Create Flask app
 app = Flask(__name__)
@@ -125,6 +125,14 @@ def register_user():
 
     if not name or not email or not password:
         return jsonify({'error': 'Name, email, and password are required.'}), 400
+    
+    # Validate email format
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return jsonify({"error": "Invalid email format"}), 400
+
+    # Validate password length (if provided)
+    if password and len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
 
     hashed_password = generate_password_hash(password)  # Encrypt the password
 
@@ -336,6 +344,14 @@ def update_profile():
     email = data.get('email')
     current_password = data.get('current_password')
     new_password = data.get('new_password')
+    
+    # Validate email format
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return jsonify({"error": "Invalid email format"}), 400
+
+    # Validate password length (if provided)
+    if new_password and len(new_password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
 
     if not name or not email or not current_password:
         return jsonify({"error": "Name, email, and current password are required."}), 400

@@ -5,11 +5,15 @@ import LoginPopup from "./components/LoginPopup";
 import ProfilePage from "./components/ProfilePage"; // Profile component
 import { getUserProfile, saveQRCode, logoutUser } from "./services/userService";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify"; // Import ToastContainer and toast
+import "react-toastify/dist/ReactToastify.css"; // Import the CSS for react-toastify
+import { Oval } from "react-loader-spinner"; // Import spinner component from react-loader-spinner
 
 function App() {
   const [inputValue, setInputValue] = useState(""); // State to hold user input
   const [imgSrc, setImgSrc] = useState(null); // State to hold the generated QR code image
   const [error, setError] = useState(null); // State to hold any error messages
+  const [isGenerating, setIsGenerating] = useState(false); // State to track loading status for QR code generation
 
   // States for controlling popup visibility
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -31,6 +35,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setIsGenerating(true); // Set loading state to true
 
     try {
       const response = await fetch("http://127.0.0.1:5000/generate-qr", {
@@ -44,7 +49,7 @@ function App() {
       const data = await response.json();
       if (data.qr_code) {
         setImgSrc(`data:image/png;base64,${data.qr_code}`);
-        console.log("QR code generated successfully:", data.qr_code);
+        toast.success("QR code generated successfully!"); // Show success toast on successful QR code generation
 
         // If the user is logged in, save the QR code in the database
         if (user) {
@@ -54,13 +59,19 @@ function App() {
         throw new Error(data.error || "Failed to generate QR code.");
       }
     } catch (err) {
+      toast.error(err.message); // Show error toast if there's an issue generating the QR code
       setError(err.message);
+    } finally {
+      setIsGenerating(false); // Reset loading state after the operation completes
     }
   };
 
   return (
     <Router>
       <div className="w-full min-h-screen bg-[#181818]">
+        {/* Toast Container for global notifications */}
+        <ToastContainer position="top-right" autoClose={5000} /> {/* Enables toast notifications globally */}
+
         <Routes>
           <Route
             path="/"
@@ -103,8 +114,13 @@ function App() {
                     <button
                       type="submit"
                       className="w-full py-3 flex justify-center bg-[#252525] hover:bg-neutral-600 duration-200 rounded"
+                      disabled={isGenerating} // Disable button while loading
                     >
-                      Generate
+                      {isGenerating ? (
+                        <Oval height={24} width={24} color="#ffffff" ariaLabel="loading" /> // Show spinner when loading
+                      ) : (
+                        "Generate"
+                      )}
                     </button>
                   </form>
 

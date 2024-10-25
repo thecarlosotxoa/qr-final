@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { getGeneratedQRCodes, deleteQRCode, logoutUser } from "../services/userService"; // Import the necessary service functions
 import { Link, useNavigate } from "react-router-dom";
 import EditProfilePopup from "./EditProfilePopup"; // Import the Edit Profile popup
+import { toast } from "react-toastify"; // Import toast for notifications
+import { Oval } from "react-loader-spinner"; // Import spinner from react-loader-spinner for loading indication
 
 const ProfilePage = ({ user, userLoading, setUser }) => {
   const [qrCodes, setQRCodes] = useState([]); // State to store fetched QR codes
@@ -43,8 +45,10 @@ const ProfilePage = ({ user, userLoading, setUser }) => {
       try {
         await deleteQRCode(id); // Call backend to delete the QR code
         setQRCodes(qrCodes.filter((code) => code.id !== id)); // Remove the deleted QR code from the state
+        toast.success("QR code deleted successfully!"); // Show success toast for deletion
       } catch (err) {
         setError("Failed to delete QR code.");
+        toast.error("Error deleting QR code."); // Show error toast if deletion fails
       }
     }
   };
@@ -56,11 +60,12 @@ const ProfilePage = ({ user, userLoading, setUser }) => {
     navigate("/"); // Redirect to the main page
   };
 
-  // Render a loading state while data is being fetched
+  // Render a loading state with spinner while data is being fetched
   if (userLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#181818] text-slate-300">
-        <p>Loading...</p>
+        <Oval height={50} width={50} color="#ffffff" ariaLabel="loading" /> {/* Loading spinner */}
+        <p>Loading...</p> {/* Loading text */}
       </div>
     );
   }
@@ -145,6 +150,7 @@ const ProfilePage = ({ user, userLoading, setUser }) => {
           user={user} 
           onClose={() => setShowEditProfilePopup(false)} // Close the popup
           setUser={setUser} // Update user state after editing
+          showToast={(message) => toast.success(message)} // Pass a toast success message callback for profile updates
         />
       )}
     </div>
@@ -152,4 +158,3 @@ const ProfilePage = ({ user, userLoading, setUser }) => {
 };
 
 export default ProfilePage;
-

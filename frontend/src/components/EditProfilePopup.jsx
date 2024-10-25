@@ -1,8 +1,9 @@
+// src/components/EditProfilePopup.jsx
 import React, { useState } from "react";
 import { updateProfile, deleteAccount } from "../services/userService";
 import { AiOutlineClose } from "react-icons/ai";
 
-const EditProfilePopup = ({ user, onClose, setUser }) => {
+const EditProfilePopup = ({ user, onClose, setUser, showToast }) => { // Add showToast prop
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -11,10 +12,37 @@ const EditProfilePopup = ({ user, onClose, setUser }) => {
   const [error, setError] = useState(null);
   const [deletionMode, setDeletionMode] = useState(false); // State to toggle deletion mode
 
+  // Function to validate profile form inputs
+  const validateProfileForm = () => {
+    if (!name || !email || !currentPassword) {
+      setError("Name, email, and current password are required.");
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) { // Check for valid email format
+      setError("Please enter a valid email address.");
+      return false;
+    }
+    if (newPassword && newPassword.length < 6) { // Validate new password length if provided
+      setError("New password must be at least 6 characters long.");
+      return false;
+    }
+    return true;
+  };
+
+  // Save profile changes and display toast notification if successful
   const handleSave = async () => {
+    setError(null);
+
+    // Run validation before saving changes
+    if (!validateProfileForm()) return;
+
     try {
       await updateProfile(name, email, currentPassword, newPassword);
       setUser({ ...user, name, email }); // Update the user state with the new info
+      
+      // Display a toast notification for successful profile update
+      if (showToast) showToast("Profile updated successfully!");
+
       onClose(); // Close the popup after saving
     } catch (err) {
       setError(err.message); // Display error message if something goes wrong
@@ -82,7 +110,7 @@ const EditProfilePopup = ({ user, onClose, setUser }) => {
               <input
                 type="password"
                 className="bg-[#202020] w-full p-2 rounded focus:outline outline-neutral-300"
-                placeholder="Current Password (required for password change)"
+                placeholder="Password (required for any changes)"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
