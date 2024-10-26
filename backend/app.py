@@ -32,7 +32,13 @@ Session(app)
 CORS(
     app,
     supports_credentials=True,
-    resources={r"/*": {"origins": "http://localhost:5173"}},
+    resources={
+        r"/*": {"origins": "http://localhost:5173"},
+        r"/generate-qr": {"origins": "http://localhost:5173"},
+        r"/register": {"origins": "http://localhost:5173"},
+        r"/login": {"origins": "http://localhost:5173"},
+        r"/user/*": {"origins": "http://localhost:5173"},
+        },
 )
 
 app.config.update(
@@ -42,42 +48,6 @@ app.config.update(
     SESSION_COOKIE_DOMAIN='localhost',  # Set domain to 'localhost'
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
 )
-
-'''
-app.config.update(
-    # SESSION_COOKIE_DOMAIN=None,  # No longer needed
-    SESSION_COOKIE_SECURE=False,    # Keep False for HTTP
-    SESSION_COOKIE_HTTPONLY=True,   # This is fine
-    SESSION_COOKIE_SAMESITE="Lax",  # Lax is acceptable
-    PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
-)
-
-
-# CORS configuration
-CORS(
-    app,
-    supports_credentials=True,
-    resources={     
-        r"/*": {"origins": "http://localhost:5173"},  
-        r"/generate-qr": {"origins": "http://localhost:5173"},
-        r"/register": {"origins": "http://localhost:5173"},
-        r"/login": {"origins": "http://localhost:5173"},
-        r"/user/*": {"origins": "http://localhost:5173"},
-    },
-)
-
-# Session configuration for local development
-app.config.update(
-    # SESSION_COOKIE_DOMAIN='localhost',
-    SESSION_COOKIE_DOMAIN=None,      # Let Flask set the cookie for the correct domain
-    SESSION_COOKIE_SECURE=False,  # False for development, True for production (HTTPS)
-    # SESSION_COOKIE_HTTPONLY=True,  # Protect against cross-site scripting (XSS)
-    SESSION_COOKIE_SAMESITE="Lax",  # Allow sending cookies with cross-origin requests from the same site
-    # SESSION_COOKIE_SAMESITE="None",  # Allows cross-site cookies
-    # SESSION_COOKIE_SAMESITE="Strict",
-)
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Extend session life to 30 minutes
-'''
 
 # Database configuration
 DATABASE_CONFIG = {
